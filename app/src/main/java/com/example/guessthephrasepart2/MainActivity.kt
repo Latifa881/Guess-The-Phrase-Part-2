@@ -2,7 +2,9 @@ package com.example.guessthephrasepart2
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Build
 import android.os.Bundle
+import android.text.InputFilter
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
@@ -22,6 +24,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var phraseTextView: TextView
     lateinit var letterTextView: TextView
     lateinit var scorerTextView: TextView
+    lateinit var guessedET:EditText
     var guessList = arrayListOf<String>()
     var guessLetters = arrayListOf<String>()
     var phrases = arrayListOf<String>()
@@ -30,7 +33,10 @@ class MainActivity : AppCompatActivity() {
     var isPhrase = true
     var score = 0
     var guessCorrectLetter = ""
-
+    // extension function to set edit text maximum length
+    fun EditText.setMaxLength(maxLength: Int){
+        filters = arrayOf<InputFilter>(InputFilter.LengthFilter(maxLength))
+    }
     fun setHighestScore()//shared preferences
     { var currentHighestScore=getHighestScore()
         if(currentHighestScore<score){
@@ -38,7 +44,7 @@ class MainActivity : AppCompatActivity() {
         // We can save data with the following code
         with(sharedPreferences.edit()) {
             putInt("Highest Score", score)
-            apply()
+             apply()
         }
             scorerTextView.setText("Highest Score: $score")
         }
@@ -79,20 +85,26 @@ class MainActivity : AppCompatActivity() {
 
     fun checkPhrase(guessText: String) {
         if (answer == guessText.capitalize()) {
-            score = counter
-            setHighestScore()
-            customAlert("Congratulations", "You guessed it correctly!")
+            customAlert("Congratulations","You guessed it correctly!")
             replayGame()
         } else {
             counter--
             guessList.add("$guessText is a wrong guess.")
-            guessList.add("$counter guesses remaining!")
+            if(counter!=0){
+                guessList.add("$counter guesses remaining!")}
+            else{
+                guessedET.hint = "Guess the letters of the phrase"
+                guessedET.setMaxLength(1)
+                counter = 10
+                isPhrase = false
+                guessList.clear()
+
+            }
 
         }
         myRV.adapter!!.notifyDataSetChanged()
 
     }
-
     fun encodePhrase(phrase: String): String {
         var enPhrase = ""
         for (i in phrase) {
@@ -119,7 +131,7 @@ class MainActivity : AppCompatActivity() {
     fun checkLetter(guessLetter: Char) {
 
         letterTextView.setVisibility(View.VISIBLE)
-
+        guessedET.setMaxLength(1)
         if (answer.contains(guessLetter)) {//the letter exist in the phrase
             guessLetters.add(guessLetter + "")
             counter--
@@ -138,9 +150,9 @@ class MainActivity : AppCompatActivity() {
                     guessCorrectLetter += i
                 }
             }
-
-            letterTextView.text = "Guessed letters: " + guessLetters.toString()
-            phraseTextView.text = "Phrase:" + guessCorrectLetter
+            if(counter!=0)
+            {letterTextView.text = "Guessed letters: " + guessLetters.toString()
+            phraseTextView.text = "Phrase:" + guessCorrectLetter}
 
             guessList.add("Found $countLetters $guessLetter(s)")
             guessList.add("$counter guesses remaining")
@@ -155,7 +167,6 @@ class MainActivity : AppCompatActivity() {
             score = counter
             setHighestScore()
             customAlert("Congratulations", "You guessed it correctly!")
-
             myRV.adapter!!.notifyDataSetChanged()
             replayGame()
 
@@ -191,8 +202,40 @@ class MainActivity : AppCompatActivity() {
         //encode the phrase with * ignoring the spaces
         phraseTextView.text = "Phrase: " + encodePhrase(answer)
 
+
         val GuessBT = findViewById<Button>(R.id.GuessBT)
-        var guessedET = findViewById<EditText>(R.id.editTextGuess)
+        guessedET = findViewById<EditText>(R.id.editTextGuess)
+        guessedET.setMaxLength(answer.length)
+//        GuessBT.setOnClickListener {
+//            var guessText = guessedET.text.toString()
+//            if (isPhrase) {
+//                if (counter > 0) {
+//                    if (!checkIfEmpty(guessText)) {
+//                        checkPhrase(guessText)
+//                    }
+//                } else { //the user lost his 10 chances in guessing the full phrase
+//                    counter = 10
+//                    isPhrase = false
+//                    guessList.clear()
+//                    checkLetter(guessText[0])
+//
+//                }
+//            } else {
+//                if (counter > 0) {
+//                    if (!checkIfEmpty(guessText)) {
+//                        guessedET.hint = "Guess the letters of the phrase"
+//                        checkLetter(guessText[0])
+//                    }
+//                } else { //the user lost his 10 chances in guessing the letters
+//                    score = counter
+//                    customAlert("Oops!", "The phrase was $answer")
+//                    replayGame()
+//                }
+//            }
+//            guessedET.text.clear()
+//
+//        }
+
         GuessBT.setOnClickListener {
             var guessText = guessedET.text.toString()
             if (isPhrase) {
@@ -200,12 +243,6 @@ class MainActivity : AppCompatActivity() {
                     if (!checkIfEmpty(guessText)) {
                         checkPhrase(guessText)
                     }
-                } else { //the user lost his 10 chances in guessing the full phrase
-                    counter = 10
-                    isPhrase = false
-                    guessList.clear()
-                    checkLetter(guessText[0])
-
                 }
             } else {
                 if (counter > 0) {
@@ -213,13 +250,12 @@ class MainActivity : AppCompatActivity() {
                         guessedET.hint = "Guess the letters of the phrase"
                         checkLetter(guessText[0])
                     }
-                } else { //the user lost his 10 chances in guessing the letters
-                    score = counter
-                    customAlert("Oops!", "The phrase was $answer")
+                }else{ //the user lost his 10 chances in guessing the letters
+                    customAlert("Oops!","The phrase was $answer")
                     replayGame()
                 }
             }
-
+            guessedET.text.clear()
         }
 
     }
